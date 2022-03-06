@@ -1,0 +1,528 @@
+/* Based on dts for zcu102. May be VERY erroneous. */
+/* For details of specific devices, linux-xlnx can be referred to. */
+
+/dts-v1/;
+
+#include "zynqmp.dtsi"
+#include "zynqmp-clk-ccf.dtsi"
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/pinctrl-zynqmp.h>
+#include <dt-bindings/phy/phy.h>
+
+/ {
+    model = "AXU15EG";
+    compatible = "alinx,axu15eg", "xlnx,zynqmp";
+        
+    aliases {
+        ethernet0 = &gem3;
+        i2c0 = &i2c0;
+        i2c1 = &i2c1;
+        mmc0 = &sdhci0;
+        nvmem0 = &eeprom;
+        rtc0 = &rtc;
+        serial0 = &uart0;
+        serial2 = &dcc;
+        spi0 = &qspi;
+        usb0 = &usb0;
+    };
+
+	chosen {
+		bootargs = "earlycon";
+		stdout-path = "serial0:115200n8";
+		xlnx,eeprom = &eeprom;
+	};
+
+    memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x0 0x0 0x80000000>, <0x8 0x00000000 0x0 0x80000000>;
+	};
+
+    gpio-keys {
+        compatible = "gpio-keys";
+        autorepeat;
+        ps-key {
+            label = "ps-key";
+            gpios = <&gpio 26 GPIO_ACTIVE_LOW>;
+            linux,code = <KEY_DOWN>;
+            autorepeat;
+        };
+    };
+    
+	leds {
+		compatible = "gpio-leds";
+		heartbeat-led {
+			label = "heartbeat";
+			gpios = <&gpio 44 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "heartbeat";
+		};
+	};
+
+    /* An si5332 clock generator should exist, but too little is known. */
+};
+
+&can0 {
+    status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_can0_default>;
+};
+
+&can1 {
+    status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_can1_default>;
+};
+
+&dcc {
+	status = "okay";
+};
+
+&fpd_dma_chan1 {
+	status = "okay";
+};
+
+&fpd_dma_chan2 {
+	status = "okay";
+};
+
+&fpd_dma_chan3 {
+	status = "okay";
+};
+
+&fpd_dma_chan4 {
+	status = "okay";
+};
+
+&fpd_dma_chan5 {
+	status = "okay";
+};
+
+&fpd_dma_chan6 {
+	status = "okay";
+};
+
+&fpd_dma_chan7 {
+	status = "okay";
+};
+
+&fpd_dma_chan8 {
+	status = "okay";
+};
+
+/* TODO */
+&gem3 {
+	status = "okay";
+	// phy-handle = <&phy0>;
+	// phy-mode = "rgmii-id";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_gem3_default>;
+    // mdio {
+    //     /* 3 = 0b11 from AXU1EG manual */
+    //     phy0: ethernet-phy@3 {
+    //         reg = <3>;
+    //     };
+    // };
+};
+
+&gpio {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_gpio_default>;
+};
+
+&gpu {
+	status = "okay";
+};
+
+// TODO: Fix i2c, may be totally wrong
+&i2c0 {
+    // status = "okay";
+    clock-frequency = <400000>;
+	pinctrl-names = "default", "gpio";
+	pinctrl-0 = <&pinctrl_i2c0_default>;
+	pinctrl-1 = <&pinctrl_i2c0_gpio>;
+	scl-gpios = <&gpio 34 GPIO_ACTIVE_HIGH>;
+	sda-gpios = <&gpio 35 GPIO_ACTIVE_HIGH>;
+
+    lm75@48 {
+        compatible = "lm75";
+        reg = <0x48>;
+    };
+
+    eeprom: eeprom@50 {
+        /* should be 24lc04 */
+        compatible = "atmel,24c04";
+        reg = <0x50>;
+    };
+};
+
+/* Refer to UG1085 Table 28-1 "MIO Interfaces" */
+&pinctrl0 {
+    status = "okay";
+
+    pinctrl_i2c0_default: i2c0-default {
+		mux {
+            /* Number in middle seems to be the index of possible setups,
+             * counting from 0; 8 = (34 - 2) / 4.
+             */
+			groups = "i2c0_8_grp";
+			function = "i2c0";
+		};
+
+		conf {
+			groups = "i2c0_8_grp";
+			bias-pull-up;
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+		};
+	};
+
+	pinctrl_i2c0_gpio: i2c0-gpio {
+		mux {
+			groups = "gpio0_34_grp", "gpio0_35_grp";
+			function = "gpio0";
+		};
+
+		conf {
+			groups = "gpio0_34_grp", "gpio0_35_grp";
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+		};
+	};
+
+    pinctrl_uart0_default: uart0-default {
+		mux {
+			groups = "uart0_10_grp";
+			function = "uart0";
+		};
+
+		conf {
+			groups = "uart0_10_grp";
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+		};
+
+		conf-rx {
+			pins = "MIO42";
+			bias-high-impedance;
+		};
+
+		conf-tx {
+			pins = "MIO43";
+			bias-disable;
+		};
+	};
+
+	pinctrl_usb0_default: usb0-default {
+		mux {
+			groups = "usb0_0_grp";
+			function = "usb0";
+		};
+
+		conf {
+			groups = "usb0_0_grp";
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+		};
+
+		conf-rx {
+			pins = "MIO52", "MIO53", "MIO55";
+			bias-high-impedance;
+		};
+
+		conf-tx {
+			pins = "MIO54", "MIO56", "MIO57", "MIO58", "MIO59",
+			       "MIO60", "MIO61", "MIO62", "MIO63";
+			bias-disable;
+		};
+	};
+
+	pinctrl_gem3_default: gem3-default {
+		mux {
+			function = "ethernet3";
+			groups = "ethernet3_0_grp";
+		};
+
+		conf {
+			groups = "ethernet3_0_grp";
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+		};
+
+		conf-rx {
+			pins = "MIO70", "MIO71", "MIO72", "MIO73", "MIO74",
+									"MIO75";
+			bias-high-impedance;
+			low-power-disable;
+		};
+
+		conf-tx {
+			pins = "MIO64", "MIO65", "MIO66", "MIO67", "MIO68",
+									"MIO69";
+			bias-disable;
+			low-power-enable;
+		};
+
+		mux-mdio {
+			function = "mdio3";
+			groups = "mdio3_0_grp";
+		};
+
+		conf-mdio {
+			groups = "mdio3_0_grp";
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+			bias-disable;
+		};
+	};
+
+	pinctrl_can0_default: can0-default {
+		mux {
+			function = "can0";
+			groups = "can0_9_grp";
+		};
+
+		conf {
+			groups = "can0_9_grp";
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+		};
+
+		conf-rx {
+			pins = "MIO38";
+			bias-high-impedance;
+		};
+
+		conf-tx {
+			pins = "MIO39";
+			bias-disable;
+		};
+	};
+
+	pinctrl_can1_default: can1-default {
+		mux {
+			function = "can1";
+			groups = "can1_10_grp";
+		};
+
+		conf {
+			groups = "can1_10_grp";
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+		};
+
+		conf-rx {
+			pins = "MIO41";
+			bias-high-impedance;
+		};
+
+		conf-tx {
+			pins = "MIO40";
+			bias-disable;
+		};
+	};
+    
+    pinctrl_sdhci0_default: sdhci0-default {
+        mux {
+			groups = "sdio0_0_grp";
+			function = "sdio0";
+		};
+
+		conf {
+			groups = "sdio0_0_grp";
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+			bias-disable;
+		};
+
+        /* eMMC reset */
+		mux-cd {
+			groups = "sdio0_pc_0_grp";
+			function = "sdio1_pc";
+		};
+
+		conf-cd {
+			groups = "sdio0_pc_0_grp";
+			bias-pull-down; /* Default to not reset? */
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+		};
+    };
+
+	pinctrl_sdhci1_default: sdhci1-default {
+		mux {
+			groups = "sdio1_0_grp";
+			function = "sdio1";
+		};
+
+		conf {
+			groups = "sdio1_0_grp";
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+			bias-disable;
+		};
+
+		mux-cd {
+			groups = "sdio1_cd_0_grp";
+			function = "sdio1_cd";
+		};
+
+		conf-cd {
+			groups = "sdio1_cd_0_grp";
+			bias-high-impedance;
+			bias-pull-up;
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+		};
+	};
+
+	pinctrl_gpio_default: gpio-default {
+		mux-sw {
+			function = "gpio0";
+			groups = "gpio0_26_grp", "gpio0_44_grp";
+		};
+
+		conf-sw {
+			groups = "gpio0_26_grp", "gpio0_44_grp";
+			slew-rate = <SLEW_RATE_SLOW>;
+			power-source = <IO_STANDARD_LVCMOS18>;
+		};
+
+		conf-pull-up {
+			pins = "MIO44";
+			bias-pull-up;
+		};
+
+        conf-pull-down {
+            pins = "MIO26";
+            bias-pull-down;
+        };
+	};
+};
+
+&pcie {
+    status = "okay";
+};
+
+&serdes {
+    status = "okay";
+};
+
+&qspi {
+    status = "okay";
+    is-dual = <1>;
+    flash@0 {
+        /* Comments in this section are copied from zcu102, not added. */
+        compatible = "mt25qu256a", "jedec,spi-nor";
+        #address-cells = <1>;
+		#size-cells = <1>;
+		reg = <0x0>;
+        spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>; /* FIXME also DUAL configuration possible */
+		spi-max-frequency = <108000000>; /* Based on DC1 spec */
+		partition@0 { /* for testing purpose */
+			label = "qspi-fsbl-uboot";
+			reg = <0x0 0x100000>;
+		};
+		partition@100000 { /* for testing purpose */
+			label = "qspi-linux";
+			reg = <0x100000 0x500000>;
+		};
+		partition@600000 { /* for testing purpose */
+			label = "qspi-device-tree";
+			reg = <0x600000 0x20000>;
+		};
+		partition@620000 { /* for testing purpose */
+			label = "qspi-rootfs";
+			reg = <0x620000 0x5E0000>;
+		};
+    };
+};
+
+&rtc {
+	status = "okay";
+};
+
+/* No SATA */
+
+&sdhci0 {
+    status = "okay";
+    pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_sdhci0_default>;
+	xlnx,mio-bank = <0>;
+};
+
+&sdhci1 {
+    status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_sdhci1_default>;
+	xlnx,mio-bank = <1>;
+};
+
+&uart0 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart0_default>;
+};
+
+/* No uart1 */
+
+&usb0 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usb0_default>;
+};
+
+/* TODO: Check USB */
+&dwc3_0 {
+	status = "okay";
+	dr_mode = "host";
+	snps,usb3_lpm_capable;
+	phy-names = "usb3-phy";
+    phys = <&lane1 PHY_TYPE_USB3 0 1 26000000>;
+	maximum-speed = "super-speed";
+};
+
+&watchdog0 {
+	status = "okay";
+};
+
+&xilinx_ams {
+	status = "okay";
+};
+
+&ams_ps {
+	status = "okay";
+};
+
+&ams_pl {
+	status = "okay";
+};
+
+/* TODO: Check DisplayPort */
+&zynqmp_dpsub {
+	status = "okay";
+	phy-names = "dp-phy0", "dp-phy1";
+    phys = <&lane3 PHY_TYPE_DP 0 2 27000000>,
+           <&lane2 PHY_TYPE_DP 1 2 27000000>;
+};
+
+&zynqmp_dp_snd_codec0 {
+	status = "okay";
+};
+
+&zynqmp_dp_snd_pcm0 {
+	status = "okay";
+};
+
+&zynqmp_dp_snd_pcm1 {
+	status = "okay";
+};
+
+&zynqmp_dp_snd_card0 {
+	status = "okay";
+};
+
+&xlnx_dpdma {
+	status = "okay";
+};
